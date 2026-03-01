@@ -4,5 +4,16 @@ RUN apt-get update -qq \
     && apt-get install -y -qq --no-install-recommends python3-yaml \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install -g clawhub
-RUN mkdir -p /home/node/.config/clawhub && chown -R 1026:100 /home/node/.config
+RUN mkdir -p /home/node/.config/clawhub /home/node/.local/bin /home/node/.npm \
+    && chown -R 1026:100 /home/node/.config /home/node/.local /home/node/.npm
+# Symlink openclaw CLI for plugin installer discovery
+RUN ln -sf /app/openclaw.mjs /usr/local/bin/openclaw
+# Install Bun for node user (claude-mem worker runtime)
+ENV BUN_INSTALL=/home/node/.bun
+RUN curl -fsSL https://bun.sh/install | bash \
+    && chown -R 1026:100 /home/node/.bun
+ENV PATH="/home/node/.bun/bin:${PATH}"
+# Install uv/uvx for chroma-mcp (claude-mem vector search)
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_INSTALL_DIR=/usr/local/bin sh
+RUN mkdir -p /home/node/.cache/uv && chown -R 1026:100 /home/node/.cache
 USER node
